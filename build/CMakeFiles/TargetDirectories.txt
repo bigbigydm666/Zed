@@ -1,0 +1,3 @@
+/home/ydm/Codes/ZedDriver/build/CMakeFiles/rebuild_cache.dir
+/home/ydm/Codes/ZedDriver/build/CMakeFiles/run.dir
+/home/ydm/Codes/ZedDriver/build/CMakeFiles/edit_cache.dir
