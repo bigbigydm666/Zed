@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-12-24 08:30:32
- * @LastEditTime: 2020-12-24 17:13:25
+ * @LastEditTime: 2020-12-25 15:07:23
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /ZedDriver/ZED.hpp
@@ -54,15 +54,17 @@ class ZED
       sl::RuntimeParameters runtime_params;
       
    public:
+
       void init()
       {
          //设置参数
          sl::InitParameters init_params;
-         init_params.camera_resolution = sl::RESOLUTION::HD2K;
+         init_params.camera_resolution = sl::RESOLUTION::HD720;
          init_params.depth_mode = sl::DEPTH_MODE::QUALITY;
-         init_params.coordinate_units = sl::UNIT::METER;
+         init_params.coordinate_units = sl::UNIT::CENTIMETER;
+         
          //打开相机
-         sl::ERROR_CODE returned_state = zed.open();
+         sl::ERROR_CODE returned_state = zed.open(init_params);
          if (returned_state != sl::ERROR_CODE::SUCCESS) 
          {
             std::cout << "Error " << returned_state << ", exit program.\n";
@@ -123,43 +125,56 @@ class ZED
       }
       float calcDistance(cv::Point center)
       {
-         zed.retrieveMeasure(point_cloud, sl::MEASURE::CONFIDENCE, sl::MEM::CPU, image_size);
-         sl::float4 point3D;
+         zed.retrieveMeasure(point_cloud, sl::MEASURE::DEPTH, sl::MEM::CPU, image_size);
+         sl::float1 point3D;
+         float sumDistance;
+         int count = 0;
          for (int i = -5; i < 5; i++)
          {
             for(int j = -5; j < 5; j++)
             {
-               point_cloud.getValue(center.x + i , + center.y + j, &point3D);
-               float sumDistance = 0.0;
-               sumDistance += sqrt(point3D.x*point3D.x + point3D.y*point3D.y + point3D.z*point3D.z);
-               float distance = sumDistance / 100;
-               return distance/10;
+               point_cloud.getValue(center.x, center.y , &point3D);
+               sumDistance = 0.0;
+               //cout<<point3D<<endl;
+               //sumDistance += sqrt(point3D.x*point3D.x + point3D.y*point3D.y + point3D.z*point3D.z);
+               sumDistance += point3D;
+               if(point3D==0) continue;
+               count++;
             }
          }
+         float distance = sumDistance/count;
+         return distance;
       }
 
-      cv::Mat depthMask(int dist, int range, cv::Mat temp)
+      cv::Mat depthMask(float dist, float range, cv::Mat temp)
       {
+         sl::Mat point_cloud2;
+         sl::float1 point;
+         zed.retrieveMeasure(point_cloud2, sl::MEASURE::DEPTH, sl::MEM::CPU, image_size);
          cv::Mat depthMask = cv::Mat::zeros(temp.size(), CV_8UC1);
          for(int i = 0; i < temp.rows; i++)
          {
-            for(int j = 0; i < temp.cols; j++)
+            for(int j = 0; j < temp.cols; j++)
             {
-               sl::float4 point3D;
-               point_cloud.getValue(i, j, &point3D);
+               point_cloud2.getValue(0.5*new_width - 150 + i, 0.5*new_height - 150 + j, &point);
                float distance;
-               distance = sqrt(point3D.x*point3D.x + point3D.y*point3D.y + point3D.z*point3D.z);
-               if(abs(distance - dist) < range)
+               distance = point;
+               if(abs(distance/100 - dist) < range)
                {
-                  depthMask.ptr<uchar>(i)[j] = 1;
+                  depthMask.ptr<uchar>(j)[i] = 1;
                }
             }
-            cv::Mat result;
-            cv::multiply(temp, depthMask, result);
-            return result;
          }
-      }
+         return depthMask;
+      }   
 
-      
+      int getWidth()
+      {
+         return new_width;
+      }
+      int getHeight()
+      {
+         return new_height;
+      }
 
 };
