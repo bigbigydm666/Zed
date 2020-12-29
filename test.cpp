@@ -64,7 +64,7 @@
  */
 
 
-#define MODE BLUE
+#define MODE RED
 
 
 #include <iostream>
@@ -98,8 +98,9 @@ int main()
       break;
    case 2:
       
-      hMax = 187, hMin = 60;
+      hMax = 170, hMin = 60;
       sMax = 255, sMin = 50;
+      vMax = 220, vMin = 0;
    default:
       break;
    }
@@ -133,8 +134,8 @@ int main()
       Mat src = img[0].clone();
       medianBlur(src, src, 3);
       GaussianBlur(src, src, Size(3, 3), 0);
-      rectangle(src, ROIRECT, Scalar(255, 255, 255));
-      Mat kernel = getStructuringElement(MORPH_RECT, Size(9, 9));
+      rectangle(src, ROIRECT, Scalar(0, 255, 0));
+      Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
       Mat roihsv;
       Mat roisrc = src(ROIRECT);
 
@@ -143,25 +144,35 @@ int main()
       cvtColor(roisrc, roihsv, COLOR_BGR2HSV);
       Mat roisrc2 = roisrc.clone();
       cvtColor(roisrc2, roisrc2, COLOR_BGR2GRAY);
-      Mat temp1;
+      Mat temp1, temp2;
       inRange(roihsv, Scalar(hMin, sMin, vMin), Scalar(hMax, sMax, vMax), temp1);
-
-      Mat redFeature = temp1;
-      morphologyEx(redFeature, redFeature, MORPH_CLOSE, kernel);
+      Mat Feature;
+      if(MODE == RED)
+      {
+         inRange(roihsv, Scalar(0, sMin, vMin), Scalar(20, sMax, vMax), temp2);
+         Feature = temp1 + temp2;   
+      }
+      else
+      {
+         Feature = temp1;   
+      }
+      
+      
+      morphologyEx(Feature, Feature, MORPH_CLOSE, kernel);
       Mat depthMask = camera.depthMask(dist, range, roisrc);
       Mat threshold_mask;
       threshold(depthMask, threshold_mask, 0, 255, THRESH_BINARY);
       imshow("666", threshold_mask);
-      multiply(redFeature, depthMask, redFeature);
+      multiply(Feature, depthMask, Feature);
       multiply(roisrc2, depthMask, roisrc2);
 
       imshow("masked", roisrc2);
 
       vector<vector<Point>> contours;
-      findContours(redFeature, contours, 0, 1);
+      findContours(Feature, contours, 0, 1);
       Rect minRec;
       double pro = 1;
-      double min_pro = 999;
+      double min_pro = 9999;
       int min_pro_loc = -1;
       if(!contours.empty())
       {
@@ -170,7 +181,7 @@ int main()
       
          for(int i = 0; i < contours.size(); i++)
          {
-            if(contourArea(contours[i]) < 1000)   continue;
+            if(contourArea(contours[i]) < 500)   continue;
             minRec = boundingRect(contours[i]);
             if(minRec.width >= minRec.height)   continue;
             pro = matchShapes(contours[i], temp_contours[0], CONTOURS_MATCH_I1, 0);
@@ -209,14 +220,14 @@ int main()
       
       
       
-      //int b = src.data[src.channels()*(src.cols*camera.height*0.5 + camera.width) + 0];    
+      //int b = src.data[src.channels()*(src.cols*camera.getHeight()*0.5 + camera.getWidth()) + 0];    
       //int g = src.data[src.channels()*(src.cols*camera.height*0.5 + camera.width) + 1];
       //int r = src.data[src.channels()*(src.cols*camera.height*0.5 + camera.width) + 2];
       //circle(src, Point(960, 540), 1, Scalar(128, 121, 40));
       //cout << r << ' ' << g << ' ' << b << endl;
       
       imshow("result", src);
-      imshow("threshold", redFeature);
+      imshow("threshold", Feature);
 
       waitKey(1);
    }

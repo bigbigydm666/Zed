@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-12-24 08:30:32
- * @LastEditTime: 2020-12-25 15:07:23
+ * @LastEditTime: 2020-12-25 19:35:49
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /ZedDriver/ZED.hpp
@@ -62,6 +62,7 @@ class ZED
          init_params.camera_resolution = sl::RESOLUTION::HD720;
          init_params.depth_mode = sl::DEPTH_MODE::QUALITY;
          init_params.coordinate_units = sl::UNIT::CENTIMETER;
+         init_params.depth_stabilization = 1;
          
          //打开相机
          sl::ERROR_CODE returned_state = zed.open(init_params);
@@ -73,11 +74,15 @@ class ZED
 
          //设置runtime参数
          runtime_params.sensing_mode = sl::SENSING_MODE::STANDARD;
-         runtime_params.confidence_threshold = 100;
+         runtime_params.confidence_threshold = 60;
          runtime_params.texture_confidence_threshold = 100;
          image_size = zed.getCameraInformation().camera_resolution;
          new_width = image_size.width;
          new_height = image_size.height;
+         //zed.setCameraSettings(sl::VIDEO_SETTINGS::WHITEBALANCE_AUTO);
+         zed.setCameraSettings(sl::VIDEO_SETTINGS::GAMMA, 9);
+         zed.setCameraSettings(sl::VIDEO_SETTINGS::GAIN, 100);
+         zed.setCameraSettings(sl::VIDEO_SETTINGS::EXPOSURE, 100);
       }   
       void setCamera(int a)
       {
@@ -85,12 +90,12 @@ class ZED
          {
          case 1:
             zed.setCameraSettings(sl::VIDEO_SETTINGS::SATURATION, 8);
-            zed.setCameraSettings(sl::VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE, 2800);
+            zed.setCameraSettings(sl::VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE, 3050);
             break;
          
          case 2:
             zed.setCameraSettings(sl::VIDEO_SETTINGS::SATURATION, 8);
-            zed.setCameraSettings(sl::VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE, 5600);
+            zed.setCameraSettings(sl::VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE, 4800);
             break;   
          
          default:
